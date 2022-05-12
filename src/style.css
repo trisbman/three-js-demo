@@ -7,7 +7,13 @@
 html,
 body
 {
-    overflow: hidden;
+    /* overflow: hidden; */
+    scrollbar-width: none;
+    -ms-overflow-style: none;        
+}
+
+body::-webkit-scrollbar {
+    display: none;
 }
 
 .webgl
@@ -16,4 +22,17 @@ body
     top: 0;
     left: 0;
     outline: none;
+}
+
+.lil-gui {
+    /* display: none; */
+}
+
+.scrollTarget {
+    scrollbar-width: none;
+    height: 1000vh;
+    width: 100vw;
+    position: absolute;
+    z-index: 0;
+    top: 0;
 }
