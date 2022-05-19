@@ -93,11 +93,11 @@ window.addEventListener('resize', () => {
  */
 // Base camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = -6.5, camera.position.y = 9, camera.position.z = 15
+camera.position.x = -6.5, camera.position.y = 3, camera.position.z = 15
 scene.add(camera)
 
 // Player camera
-const playerCamera = window.pCam = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 50)
+const playerCamera = window.pCam = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 50)
 scene.add(playerCamera)
 playerCamera.position.x = 5, playerCamera.position.z = 5
 const playerCameraHelper = new THREE.CameraHelper(playerCamera)
@@ -110,8 +110,13 @@ const parameters = {
 const cameras = [camera, playerCamera]
 
 // Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
+// const controls = new OrbitControls(playerCamera, canvas)
+// controls.target = new THREE.Vector3(playerCamera.position.x, playerCamera.position.y, playerCamera.position.z + 10)
+// controls.enableDamping = true;
+// controls.enableZoom = false;
+// controls.enablePan = false;
+// playerCamera.position.x = 0, playerCamera.position.y = 0, playerCamera.position.z = 0.01
+// controls.enabled = false
 
 // Axes helper
 const axesHelper = new THREE.AxesHelper(5)
@@ -161,18 +166,28 @@ const clock = new THREE.Clock()
 
 const mouse = {
     x: 0, y: 0, scrollUp: undefined
-},
-    target = {
-        x: 0, y: 0
-    }
+}
+const target = {
+    x: 0, y: 0
+}
+
 window.addEventListener('mousemove', (e) => {
     mouse.x = e.clientX
     mouse.y = e.clientY
 })
-canvas.addEventListener('wheel', (e) => {
-    mouse.scrollUp = e.deltaY < 0
-})
 
+let forward = new THREE.Vector3();
+
+const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+const _PI_2 = Math.PI / 2;
+
+let scrollTarget = document.querySelector('.scrollTarget')
+var body = document.body,
+    html = document.documentElement;
+
+var height = Math.max(body.scrollHeight, body.offsetHeight,
+    html.clientHeight, html.scrollHeight, html.offsetHeight);
 /**
  * Movement
  */
@@ -322,29 +337,85 @@ const movements = window.movements = [
 
 ]
 
+let disabledByScrollUp = false
 gsap.registerPlugin(ScrollTrigger)
-const tl = gsap.timeline({
-    paused: true,
-    scrollTrigger: {
+const tl = window.timeline =
+
+    /*
+    ScrollTrigger.create({
+        animation: anim,
+        scrub: 1,
         trigger: ".scrollTarget",
         start: "top top",
-        end: "bottom 100%",
-        scrub: 5,
-        markers: { color: "white" }
-    }
+        end: "bottom bottom",
+        markers: true,
+        onToggle: self => { },
+        onUpdate: self => {
+            const progress = self.progress.toFixed(3), direction = self.direction, velocity = self.getVelocity();
+    
+            console.log(progress, velocity);
+            if (progress == 1 && !mouse.scrollUp) {
+                console.log(1);
+                self.disable()
+                self.scroll(0)
+                self.enable()
+    
+            } else if (scrollY == 0 && tl.progress == 0 && mouse.scrollUp) {
+                console.log(2);
+                self.disable()
+                scrollTo(0, height - html.clientHeight * 1.25)
+                setTimeout(() => {
+    
+                    self.enable()
+                }, 1000);
+    
+            }
+        }
+    })
+    
+    
+    */
+    gsap.timeline({
+        paused: true,
+        scrollTrigger: {
+            trigger: ".scrollTarget",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            markers: true,
 
-})
+            onUpdate: (self) => {
+                const progress = self.progress.toFixed(3), direction = self.direction, velocity = self.getVelocity();
 
-gsap.registerPlugin(ScrollTrigger)
+                console.log(progress, velocity);
+                if (progress == 1 && !mouse.scrollUp) {
+                    console.log(1);
+                    self.disable()
+                    self.scroll(0)
+                    self.enable()
 
+                } else if (scrollY == 0 && tl.scrollTrigger.progress == 0 && mouse.scrollUp) {
+                    console.log(2);
+                    // self.animation.reverse()
+                    // scrollTo(0, height - html.clientHeight * 1.25)
+                }
+            }
+        }
+    })
+
+// */
+const anim = new gsap.timeline
 movements.forEach((movement, j) => {
     if (movement.position) {
+        forward.x = movement.position.x || playerCamera.position.x
+        forward.y = movement.position.y || playerCamera.position.y
+        forward.z = movement.position.z || playerCamera.position.z
         tl.to(playerCamera.position, {
-            x: movement.position.x || playerCamera.position.x,
-            y: movement.position.y || playerCamera.position.y,
-            z: movement.position.z || playerCamera.position.z,
+            x: forward.x,
+            y: forward.y,
+            z: forward.z,
             duration: 1
-        })
+        }).addLabel((j + 1).toString())
     }
     if (movement.rotation &&
         // not smooth enough
@@ -359,28 +430,83 @@ movements.forEach((movement, j) => {
     }
 })
 
+window.addEventListener('wheel', (e) => {
+    mouse.scrollUp = e.deltaY < 0
+    // console.log(scrollY, height);
+    if (scrollY > height - html.clientHeight) {
+        console.log(3);
+        // scrollTo(0, 0)
+    } else if (scrollY == 0 && mouse.scrollUp) {
+        console.log(4);
+        tl.clear()
+        scrollTo(0, height - html.clientHeight * 1.25)
+    }
+})
 
 const start = window.start = () => {
     tl.restart()
 }
 
+const delta = 6;
+let startX;
+let startY;
+
+window.addEventListener('mousedown', function (event) {
+    startX = event.pageX;
+    startY = event.pageY;
+});
+
+let moving = false, hold = false
+let movementY, movementX
+let prevX;
+let downListener = (e) => {
+    hold = true
+    prevX = parseFloat(mouse.x)
+}
+window.addEventListener('mousedown', downListener)
+const moveListener = (e) => {
+    if (hold) moving = true
+    else moving = false
+    movementY = (e.movementY * Math.PI * cameraSensitivity) / 180;
+    movementX = (e.movementX * Math.PI * cameraSensitivity) / 180;
+}
+window.addEventListener('mousemove', moveListener)
+const upListener = () => {
+    hold = false
+}
+window.addEventListener('mouseup', upListener)
+
+const cameraSensitivity = 0.2
+// document.addEventListener('mousemove', function (evt) {
+// movementY = (evt.movementY * Math.PI * cameraSensitivity) / 180;
+// movementX = (evt.movementX * Math.PI * cameraSensitivity) / 180;
+// playerCamera.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(50 * movementX));
+// playerCamera.rotateX(movementY);
+// }, false);
+
+// Clamp number between two values with the following line:
+const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
 
     // Update controls    
-    controls.update()
+    // controls.update()
 
 
     // Update camera
     const currentCamera = cameras[parameters.cameraIndex]
 
     // Camera movement
-    target.x = (sizes.width - mouse.x) * 0.0002;
-    target.y = (sizes.height - mouse.y) * 0.0002;
-    playerCamera.rotation.x += 0.05 * (target.y - playerCamera.rotation.x);
-    playerCamera.rotation.y += 0.05 * (target.x - playerCamera.rotation.y);
+    if (moving) {
+        // console.log(mouse.x)
+        target.x = (sizes.width - mouse.x) * 0.002;
+        // target.y = (sizes.height - mouse.y) * 0.002;
+        // target.x = (sizes.width - movementX) * 0.02;
 
+        playerCamera.rotation.y += 0.01 * (target.x - playerCamera.rotation.y);
+        // playerCamera.rotation.x += 0.01 * (target.y - playerCamera.rotation.x);
+    }
 
     // Render
     renderer.render(scene, currentCamera)
@@ -408,7 +534,7 @@ startBtn.innerText = "START"
 startBtn.onclick = function (e) {
     start()
 }
-gui.domElement.append(startBtn)
+// gui.domElement.append(startBtn)
 const toggleAxesBtn = document.createElement('button')
 toggleAxesBtn.innerText = "TOGGLE AXES"
 toggleAxesBtn.onclick = function (e) {

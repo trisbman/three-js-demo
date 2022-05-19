@@ -1,23 +1,21 @@
-*
-{
+* {
     margin: 0;
     padding: 0;
 }
 
 html,
-body
-{
+body {
     /* overflow: hidden; */
-    scrollbar-width: none;
-    -ms-overflow-style: none;        
+    /* scrollbar-width: none; */
+    /* -ms-overflow-style: none; */
+    overflow-x: hidden;
 }
 
 body::-webkit-scrollbar {
-    display: none;
+    /* display: none; */
 }
 
-.webgl
-{
+.webgl {
     position: fixed;
     top: 0;
     left: 0;
@@ -29,7 +27,7 @@ body::-webkit-scrollbar {
 }
 
 .scrollTarget {
-    scrollbar-width: none;
+    /* scrollbar-width: none; */
     height: 1000vh;
     width: 100vw;
     position: absolute;
