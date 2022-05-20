@@ -381,7 +381,7 @@ const tl = window.timeline =
             trigger: ".scrollTarget",
             start: "top top",
             end: "bottom bottom",
-            scrub: 1,
+            scrub: 0,
             markers: true,
 
             onUpdate: (self) => {
@@ -405,30 +405,33 @@ const tl = window.timeline =
 
 // */
 const anim = new gsap.timeline
-movements.forEach((movement, j) => {
-    if (movement.position) {
-        forward.x = movement.position.x || playerCamera.position.x
-        forward.y = movement.position.y || playerCamera.position.y
-        forward.z = movement.position.z || playerCamera.position.z
-        tl.to(playerCamera.position, {
-            x: forward.x,
-            y: forward.y,
-            z: forward.z,
-            duration: 1
-        }).addLabel((j + 1).toString())
-    }
-    if (movement.rotation &&
-        // not smooth enough
-        false) {
-        tl.to(playerCamera.rotation, {
-            x: movement.rotation.x || playerCamera.rotation.x,
-            y: movement.rotation.y || playerCamera.rotation.y,
-            z: movement.rotation.z || playerCamera.rotation.z,
-            duration: 1
-        })
+tl.registerMovements = () => {
+    movements.forEach((movement, j) => {
+        if (movement.position) {
+            forward.x = movement.position.x || playerCamera.position.x
+            forward.y = movement.position.y || playerCamera.position.y
+            forward.z = movement.position.z || playerCamera.position.z
+            tl.to(playerCamera.position, {
+                x: forward.x,
+                y: forward.y,
+                z: forward.z,
+                duration: 1
+            }).addLabel((j + 1).toString())
+        }
+        if (movement.rotation &&
+            // not smooth enough
+            false) {
+            tl.to(playerCamera.rotation, {
+                x: movement.rotation.x || playerCamera.rotation.x,
+                y: movement.rotation.y || playerCamera.rotation.y,
+                z: movement.rotation.z || playerCamera.rotation.z,
+                duration: 1
+            })
 
-    }
-})
+        }
+    })
+}
+tl.registerMovements()
 
 window.addEventListener('wheel', (e) => {
     mouse.scrollUp = e.deltaY < 0
@@ -440,6 +443,7 @@ window.addEventListener('wheel', (e) => {
         console.log(4);
         tl.clear()
         scrollTo(0, height - html.clientHeight * 1.25)
+        tl.registerMovements()
     }
 })
 
